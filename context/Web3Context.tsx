@@ -1,9 +1,16 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useMemo,
+} from "react";
 import { ethers, Contract } from "ethers";
 import { Round, Candidate, RewardRecord } from "../app/types";
 
+// --- Config ---
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_VOTING_ADDRESS || "";
 
 const VOTING_ABI = [
@@ -12,7 +19,7 @@ const VOTING_ABI = [
   "function roundCount() view returns (uint256)",
   "function rounds(uint256) view returns (uint256 id, string title, uint256 endTime, bool isActive, uint256 totalRewardPool)",
   "function getCandidates(uint256) view returns (tuple(uint256 id, string name, uint256 voteCount, address wallet, address[] voters)[])",
-  "function hasVoted(uint256, address) view returns (bool)", // Check vote status
+  "function hasVoted(uint256, address) view returns (bool)",
   "function usernames(address) view returns (string)",
   "function setUsername(string)",
   "function getUserRewardHistory(address) view returns (tuple(uint256 roundId, string roundTitle, uint256 amount, uint256 rank, uint256 timestamp)[])",
@@ -35,9 +42,9 @@ interface Web3ContextType {
   isConnected: boolean;
 
   rounds: Round[];
-  // Map Round ID -> List of Candidates
+  activeRound: Round | null; // <--- ADDED BACK (Computed)
+
   allCandidates: Record<number, Candidate[]>;
-  // Map Round ID -> Boolean (Has current user voted?)
   userVoteStatus: Record<number, boolean>;
 
   userRewards: RewardRecord[];
@@ -75,6 +82,12 @@ export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
   );
   const [userRewards, setUserRewards] = useState<RewardRecord[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // --- Computed Property: Active Round ---
+  // Finds the most recent round where isActive is true
+  const activeRound = useMemo(() => {
+    return rounds.find((r) => r.isActive) || null;
+  }, [rounds]);
 
   const connectWallet = async () => {
     if (typeof window !== "undefined" && window.ethereum) {
@@ -151,8 +164,6 @@ export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
         const candidatesMap: Record<number, Candidate[]> = {};
         const voteStatusMap: Record<number, boolean> = {};
 
-        // Loop all rounds (1 to Count)
-        // Note: For production with 100s of rounds, this should be paginated or optimized.
         for (let i = totalRounds; i >= 1; i--) {
           const r = await contractInstance.rounds(i);
           const roundId = Number(r.id);
@@ -165,7 +176,6 @@ export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
             totalRewardPool: ethers.formatEther(r.totalRewardPool),
           });
 
-          // Fetch Candidates for this round
           const cands = await contractInstance.getCandidates(roundId);
           candidatesMap[roundId] = cands.map((c: any) => ({
             id: Number(c.id),
@@ -175,7 +185,6 @@ export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
             voters: c.voters,
           }));
 
-          // Fetch "Has Voted" status for this user
           if (address) {
             const hasVoted = await contractInstance.hasVoted(roundId, address);
             voteStatusMap[roundId] = hasVoted;
@@ -241,8 +250,9 @@ export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
         isAdmin,
         isConnected: !!account,
         rounds,
+        activeRound, // <--- Providing the computed value here
         allCandidates,
-        userVoteStatus, // Exposed
+        userVoteStatus,
         userRewards,
         contract,
         contractBalance,
