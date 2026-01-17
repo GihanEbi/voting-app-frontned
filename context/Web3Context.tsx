@@ -58,6 +58,7 @@ interface Web3ContextType {
   refreshData: () => Promise<void>;
   registerUser: () => Promise<void>;
   refillTreasury: (amount: string) => Promise<void>;
+  addTokenToMetaMask: () => Promise<void>;
 }
 
 const Web3Context = createContext<Web3ContextType | undefined>(undefined);
@@ -78,7 +79,7 @@ export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
     Record<number, Candidate[]>
   >({});
   const [userVoteStatus, setUserVoteStatus] = useState<Record<number, boolean>>(
-    {}
+    {},
   );
   const [userRewards, setUserRewards] = useState<RewardRecord[]>([]);
   const [loading, setLoading] = useState(false);
@@ -100,7 +101,7 @@ export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
         const _contract = new ethers.Contract(
           CONTRACT_ADDRESS,
           VOTING_ABI,
-          signer
+          signer,
         );
         setContract(_contract);
 
@@ -118,6 +119,31 @@ export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
       }
     } else {
       alert("Please install MetaMask!");
+    }
+  };
+
+  // ADD THIS FUNCTION
+  const addTokenToMetaMask = async () => {
+    if (!tokenContract || !tokenSymbol) return;
+
+    try {
+      const tokenAddress = await tokenContract.getAddress();
+
+      // This is the MetaMask API to register a token
+      await window.ethereum.request({
+        method: "wallet_watchAsset",
+        params: {
+          type: "ERC20",
+          options: {
+            address: tokenAddress,
+            symbol: tokenSymbol,
+            decimals: 18,
+            image: "https://i.postimg.cc/tTMtcqjV/logo.png", // Optional: You can put a URL to your logo here
+          },
+        },
+      });
+    } catch (error) {
+      console.error(error);
     }
   };
 
@@ -147,11 +173,12 @@ export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
           const _tokenContract = new ethers.Contract(
             tokenAddress,
             TOKEN_ABI,
-            signer
+            signer,
           );
           setTokenContract(_tokenContract);
           const bal = await _tokenContract.balanceOf(CONTRACT_ADDRESS);
           const sym = await _tokenContract.symbol();
+          // const sym = "SORE"; 
           setContractBalance(ethers.formatEther(bal));
           setTokenSymbol(sym);
         } catch (e) {}
@@ -205,7 +232,7 @@ export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
               amount: ethers.formatEther(r.amount),
               rank: Number(r.rank),
               timestamp: Number(r.timestamp),
-            }))
+            })),
           );
         }
       } catch (e) {
@@ -214,7 +241,7 @@ export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
         setLoading(false);
       }
     },
-    []
+    [],
   );
 
   const refillTreasury = async (amount: string) => {
@@ -246,6 +273,7 @@ export const Web3Provider = ({ children }: { children: React.ReactNode }) => {
     <Web3Context.Provider
       value={{
         account,
+        addTokenToMetaMask,
         username,
         isAdmin,
         isConnected: !!account,

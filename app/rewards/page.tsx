@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import { useWeb3 } from "../../context/Web3Context";
+import { useUI } from "../../context/UIContext";
 
 export default function RewardsPage() {
   const {
@@ -11,7 +12,17 @@ export default function RewardsPage() {
     isAdmin,
     rounds,
     tokenSymbol,
+    addTokenToMetaMask,
   } = useWeb3();
+  const { showToast } = useUI();
+  const handleAddToWallet = async () => {
+    try {
+      await addTokenToMetaMask();
+      showToast("Token Added to MetaMask!", "success");
+    } catch (e) {
+      showToast("Failed to add token", "error");
+    }
+  };
 
   if (!isConnected)
     return (
@@ -26,7 +37,7 @@ export default function RewardsPage() {
     const endedRounds = rounds.filter((r) => !r.isActive);
     const totalDistributed = endedRounds.reduce(
       (acc, r) => acc + parseFloat(r.totalRewardPool),
-      0
+      0,
     );
 
     return (
@@ -103,7 +114,7 @@ export default function RewardsPage() {
   // --- USER VIEW: PERSONAL REWARDS (Existing Logic) ---
   const totalEarned = userRewards.reduce(
     (acc, r) => acc + parseFloat(r.amount),
-    0
+    0,
   );
 
   return (
@@ -129,6 +140,20 @@ export default function RewardsPage() {
             {totalEarned.toFixed(2)}{" "}
             <span className="text-lg text-white">{tokenSymbol}</span>
           </p>
+        </div>
+        <div>
+          {/* NEW BUTTON HERE */}
+          <button
+            onClick={handleAddToWallet}
+            className="text-xs font-bold bg-white/10 hover:bg-white/20 border border-white/20 px-3 py-2 rounded-lg flex items-center gap-2 ml-auto transition-colors"
+          >
+            <img
+              src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg"
+              className="w-4 h-4"
+              alt="MetaMask"
+            />
+            Add {tokenSymbol} to Wallet
+          </button>
         </div>
       </div>
 

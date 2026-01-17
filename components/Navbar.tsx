@@ -29,7 +29,7 @@ export const Navbar = () => {
             </span>
           </div>
           <h1 className="text-xl font-extrabold tracking-tight text-white">
-            VOTE<span className="text-primary">.io</span>
+            SORE<span className="text-primary"> Voting Token</span>
           </h1>
         </Link>
 

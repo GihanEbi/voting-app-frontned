@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useWeb3 } from "../context/Web3Context";
+import Image from "next/image";
 
 export default function Home() {
   const {
@@ -15,7 +16,7 @@ export default function Home() {
   const totalRounds = rounds.length;
   const totalPool = rounds.reduce(
     (acc, r) => acc + parseFloat(r.totalRewardPool),
-    0
+    0,
   );
 
   return (
@@ -67,6 +68,22 @@ export default function Home() {
             View Leaderboard
           </Link>
         </div>
+        <div className="inline-flex items-center gap-3 mt-6 border border-border-dark px-4 py-2 rounded-lg bg-surface-dark">
+          <Image
+            src="/images/img1.png"
+            alt="Google Faucet"
+            width={40}
+            height={40}
+          />
+          <a
+            href="https://cloud.google.com/application/web3/faucet/ethereum/sepolia"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary font-bold"
+          >
+            Google Faucet
+          </a>
+        </div>
       </section>
 
       {/* Live Blockchain Stats */}
@@ -78,8 +95,8 @@ export default function Home() {
         />
         <StatBox
           label="Total Rewards Pool"
-          value={`${totalPool.toLocaleString()} ${tokenSymbol || "TOKEN"}`}
-          color="text-accent-gold"
+          value={`${totalPool.toLocaleString()} ${tokenSymbol || "SORE"}`}
+          color="text-primary"
           icon="token"
         />
         <StatBox
